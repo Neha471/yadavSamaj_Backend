@@ -19,16 +19,16 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
 
 import java.io.File;
-import java.io.IOException;        // ✅ for IOException
+import java.io.IOException; // ✅ for IOException
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;         // ✅ for HashMap
-import java.util.List;            // ✅ for List
-import java.util.Map;             // ✅ for Map
-import java.util.Optional;        // ✅ for Optional
+import java.util.HashMap; // ✅ for HashMap
+import java.util.List; // ✅ for List
+import java.util.Map; // ✅ for Map
+import java.util.Optional; // ✅ for Optional
 import java.util.stream.Collectors;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,16 +40,16 @@ public class MatrimonialUserController {
 
     private final MatrimonialUserService matrimonialUserService;
     private final MatrimonialUserRepository repository;
-    private final String UPLOAD_DIR = "E:\\Akanksha\\Yadav_samaj\\yadavsajam\\uploads\\matrimonial\\";
+    private final String UPLOAD_DIR = "/var/www/angular/uploads/matrimonial/";
     @Autowired
     private PaymentService paymentService;
 
     private static final long OTP_EXPIRATION_MILLIS = 5 * 60 * 1000; // 5 minutes
+
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> register(
             @RequestPart("user") String userJson,
-            @RequestPart(value = "photo", required = false) MultipartFile photoFile
-    ) {
+            @RequestPart(value = "photo", required = false) MultipartFile photoFile) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
@@ -70,18 +70,18 @@ public class MatrimonialUserController {
 
             // Set membership amount & expiry
             switch (user.getMembershipPlan()) {
-            case "1_YEAR" -> {
-                user.setMembershipAmount(99);
-                user.setMembershipExpiryDate(LocalDate.now().plusYears(1));
+                case "1_YEAR" -> {
+                    user.setMembershipAmount(99);
+                    user.setMembershipExpiryDate(LocalDate.now().plusYears(1));
+                }
+                case "LIFETIME" -> {
+                    user.setMembershipAmount(499);
+                    user.setMembershipExpiryDate(null);
+                }
+                default -> {
+                    return ResponseEntity.badRequest().body(Map.of("message", "Invalid membership plan selected."));
+                }
             }
-            case "LIFETIME" -> {
-                user.setMembershipAmount(499);
-                user.setMembershipExpiryDate(null);
-            }
-            default -> {
-                return ResponseEntity.badRequest().body(Map.of("message", "Invalid membership plan selected."));
-            }
-        }
 
             // Initial status
             user.setStatus("PENDING");
@@ -94,15 +94,13 @@ public class MatrimonialUserController {
             return ResponseEntity.ok(Map.of(
                     "message", "Registered successfully. Proceed to payment.",
                     "user", savedUser,
-                    "amount", savedUser.getMembershipAmount()
-            ));
+                    "amount", savedUser.getMembershipAmount()));
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Registration failed: " + e.getMessage()));
         }
     }
-
 
     @GetMapping("/send-otp/{phone}")
     public ResponseEntity<?> sendOtp(@PathVariable String phone) {
@@ -117,16 +115,14 @@ public class MatrimonialUserController {
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "otp", otp,
-                    "message", "OTP generated successfully"
-            ));
+                    "message", "OTP generated successfully"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "message", e.getMessage()));
         }
     }
-    
-    
- // MatrimonialUserController.java
+
+    // MatrimonialUserController.java
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String phone = payload.get("phone");
@@ -135,7 +131,7 @@ public class MatrimonialUserController {
         MatrimonialUser user = matrimonialUserService.findByPhone(phone)
                 .orElse(null);
 
-        if (user == null) 
+        if (user == null)
             return ResponseEntity.ok(Map.of("verified", false, "message", "User not registered"));
 
         if (!otp.equals(user.getCurrentOtp())) {
@@ -164,54 +160,52 @@ public class MatrimonialUserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/pending")
+    public ResponseEntity<?> getPendingAndPaymentPendingUsers() {
+        List<MatrimonialUser> pendingUsers = matrimonialUserService.getPendingUsers();
+        List<MatrimonialUser> approvedButNotPaid = matrimonialUserService.getApprovedButNotPaidUsers();
 
-        @GetMapping("/pending")
-        public ResponseEntity<?> getPendingAndPaymentPendingUsers() {
-            List<MatrimonialUser> pendingUsers = matrimonialUserService.getPendingUsers();
-            List<MatrimonialUser> approvedButNotPaid = matrimonialUserService.getApprovedButNotPaidUsers();
+        // Map pending users
+        List<Map<String, Object>> pendingMapped = pendingUsers.stream()
+                .map(u -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", u.getId());
+                    m.put("fullName", u.getFullName());
+                    m.put("phone", u.getPhone());
+                    m.put("email", u.getEmail());
+                    m.put("type", "pending");
+                    m.put("paymentPending", false);
+                    return m;
+                })
+                .collect(Collectors.toList());
 
-            // Map pending users
-            List<Map<String, Object>> pendingMapped = pendingUsers.stream()
-                    .map(u -> {
-                        Map<String, Object> m = new HashMap<>();
-                        m.put("id", u.getId());
-                        m.put("fullName", u.getFullName());
-                        m.put("phone", u.getPhone());
-                        m.put("email", u.getEmail());
-                        m.put("type", "pending");
-                        m.put("paymentPending", false);
-                        return m;
-                    })
-                    .collect(Collectors.toList());
+        // Map approved but not paid users
+        List<Map<String, Object>> paymentPendingMapped = approvedButNotPaid.stream()
+                .map(u -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", u.getId());
+                    m.put("fullName", u.getFullName());
+                    m.put("phone", u.getPhone());
+                    m.put("email", u.getEmail());
+                    m.put("type", "approved");
+                    m.put("paymentPending", true);
+                    return m;
+                })
+                .collect(Collectors.toList());
 
-            // Map approved but not paid users
-            List<Map<String, Object>> paymentPendingMapped = approvedButNotPaid.stream()
-                    .map(u -> {
-                        Map<String, Object> m = new HashMap<>();
-                        m.put("id", u.getId());
-                        m.put("fullName", u.getFullName());
-                        m.put("phone", u.getPhone());
-                        m.put("email", u.getEmail());
-                        m.put("type", "approved");
-                        m.put("paymentPending", true);
-                        return m;
-                    })
-                    .collect(Collectors.toList());
+        // Combine both lists
+        List<Map<String, Object>> result = new ArrayList<>();
+        result.addAll(pendingMapped);
+        result.addAll(paymentPendingMapped);
 
-            // Combine both lists
-            List<Map<String, Object>> result = new ArrayList<>();
-            result.addAll(pendingMapped);
-            result.addAll(paymentPendingMapped);
-
-            return ResponseEntity.ok(result);
-        }
-
-
+        return ResponseEntity.ok(result);
+    }
 
     @GetMapping("/all")
     public List<MatrimonialUser> getAllUsers() {
         return matrimonialUserService.getAllUsers();
     }
+
     @GetMapping("/details/{phone}")
     public ResponseEntity<?> getUserDetails(@PathVariable String phone) {
         Optional<MatrimonialUser> optionalUser = matrimonialUserService.findByPhone(phone);
@@ -243,8 +237,8 @@ public class MatrimonialUserController {
 
         return ResponseEntity.ok(response);
     }
-    
- // MatrimonialUserController.java
+
+    // MatrimonialUserController.java
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(
             @PathVariable Long id,
@@ -279,7 +273,7 @@ public class MatrimonialUserController {
         existingUser.setMaritalStatus(user.getMaritalStatus());
         existingUser.setMotherTongue(user.getMotherTongue());
         existingUser.setHobbies(user.getHobbies());
-//        existingUser.setReligion(user.getReligion());
+        // existingUser.setReligion(user.getReligion());
         existingUser.setCaste(user.getCaste());
         existingUser.setDiet(user.getDiet());
         existingUser.setLifestyle(user.getLifestyle());
@@ -316,8 +310,6 @@ public class MatrimonialUserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-
-
     @PostMapping("/approve/{id}")
     public void approve(@PathVariable Long id) {
         matrimonialUserService.approveUser(id);
@@ -335,12 +327,12 @@ public class MatrimonialUserController {
 
         return ResponseEntity.ok(Map.of("message", "User rejected by admin"));
     }
+
     @PostMapping(value = "/finalize-registration", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> finalizeRegistration(
             @RequestPart("user") String userJson,
             @RequestPart(value = "photo", required = false) MultipartFile photoFile,
-            @RequestParam("paymentId") String paymentId
-    ) {
+            @RequestParam("paymentId") String paymentId) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
@@ -360,8 +352,7 @@ public class MatrimonialUserController {
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Registration completed successfully!",
-                    "user", savedUser
-            ));
+                    "user", savedUser));
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -369,8 +360,8 @@ public class MatrimonialUserController {
         }
     }
 
- // ---------------- PAYMENT by phone ----------------
- 
+    // ---------------- PAYMENT by phone ----------------
+
     @PostMapping("/payment-done")
     public ResponseEntity<?> paymentDone(@RequestBody Map<String, String> request) {
         String phone = request.get("phone");
@@ -381,27 +372,26 @@ public class MatrimonialUserController {
 
         user.setPaymentDone(true);
         user.setPaymentId(paymentId);
-        user.setStatus("ACTIVE");  // ✅ Only now user is active
+        user.setStatus("ACTIVE"); // ✅ Only now user is active
         user.setPaymentStatus("SUCCESS");
         matrimonialUserService.save(user);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Payment successful. You can now log in.",
-                "user", user
-        ));
+                "user", user));
     }
 
     // ---------------- Private OTP verification ----------------
     private boolean verifyOtpForUser(MatrimonialUser user, String otp) {
-        if (user == null || user.getCurrentOtp() == null || user.getOtpGeneratedAtMillis() == null) return false;
+        if (user == null || user.getCurrentOtp() == null || user.getOtpGeneratedAtMillis() == null)
+            return false;
 
         long now = System.currentTimeMillis();
-        if (now - user.getOtpGeneratedAtMillis() > OTP_EXPIRATION_MILLIS) return false;
+        if (now - user.getOtpGeneratedAtMillis() > OTP_EXPIRATION_MILLIS)
+            return false;
 
         return otp.equals(user.getCurrentOtp());
     }
 
-
 }
-

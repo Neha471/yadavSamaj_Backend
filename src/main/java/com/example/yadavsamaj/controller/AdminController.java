@@ -13,6 +13,25 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private static final String ADMIN_EMAIL = "admin@yadavsamaj.com";
+    private static final String ADMIN_PASSWORD = "Admin123";
+
+    @PostMapping("/login")
+    public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> req) {
+
+        String email = req.get("email");
+        String password = req.get("password");
+
+        if (ADMIN_EMAIL.equals(email) && ADMIN_PASSWORD.equals(password)) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "Login successful",
+                    "role", "ADMIN",
+                    "name", "Super Admin"));
+        }
+
+        return ResponseEntity.status(401).body(
+                Map.of("message", "Invalid email or password"));
+    }
 
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody Map<String, String> req) {

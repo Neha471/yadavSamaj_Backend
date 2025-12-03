@@ -26,14 +26,13 @@ public class TeamMemberController {
 
     private final TeamMemberRepository teamRepository;
     private final ObjectMapper mapper = new ObjectMapper();
-    private final String UPLOAD_DIR = "E:\\Akanksha\\Yadav_samaj\\yadavsajam\\uploads\\team\\";
+    private final String UPLOAD_DIR = "/var/www/angular/uploads/team/";
 
     // --------- Admin: Add new member ---------
     @PostMapping(value = "/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> addMember(
             @RequestPart("member") String memberJson,
-            @RequestPart(value = "photo", required = false) MultipartFile photo
-    ) {
+            @RequestPart(value = "photo", required = false) MultipartFile photo) {
         try {
             TeamMember member = mapper.readValue(memberJson, TeamMember.class);
 
@@ -59,10 +58,10 @@ public class TeamMemberController {
     public ResponseEntity<?> updateMember(
             @PathVariable Long id,
             @RequestPart("member") String memberJson,
-            @RequestPart(value = "photo", required = false) MultipartFile photo
-    ) {
+            @RequestPart(value = "photo", required = false) MultipartFile photo) {
         Optional<TeamMember> optionalMember = teamRepository.findById(id);
-        if (optionalMember.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Member not found");
+        if (optionalMember.isEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Member not found");
 
         try {
             TeamMember existing = optionalMember.get();

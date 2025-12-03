@@ -22,19 +22,17 @@ public class MembershipUserController {
     private final MembershipUserService membershipUserService;
     private final MembershipUserRepository repository;
 
-    private static final String UPLOAD_DIR = "E:\\Akanksha\\Yadav_samaj\\yadavsajam\\uploads\\membership\\";
+    private static final String UPLOAD_DIR = "/var/www/angular/uploads/membership/";
 
     private static final Map<String, Integer> MEMBERSHIP_PLANS = Map.of(
             "1_YEAR", 99,
-            "LIFETIME", 499
-    );
+            "LIFETIME", 499);
 
     // ---------------- Registration ----------------
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> register(
             @RequestPart("user") String userJson,
-            @RequestPart(value = "photo", required = false) MultipartFile photoFile
-    ) {
+            @RequestPart(value = "photo", required = false) MultipartFile photoFile) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
@@ -55,8 +53,7 @@ public class MembershipUserController {
                     "message", "User registered successfully",
                     "amount", saved.getMembershipAmount(),
                     "plan", saved.getMembershipPlan(),
-                    "user", saved
-            ));
+                    "user", saved));
 
         } catch (IOException | IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -77,8 +74,7 @@ public class MembershipUserController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "otp", otp,
-                "message", "OTP generated successfully"
-        ));
+                "message", "OTP generated successfully"));
     }
 
     // ---------------- Verify OTP ----------------
@@ -120,8 +116,7 @@ public class MembershipUserController {
     public ResponseEntity<?> updateMembership(
             @PathVariable Long id,
             @RequestPart("user") String userJson,
-            @RequestPart(value = "photo", required = false) MultipartFile photoFile
-    ) {
+            @RequestPart(value = "photo", required = false) MultipartFile photoFile) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
@@ -129,7 +124,8 @@ public class MembershipUserController {
 
             MembershipUser updatedUser = mapper.readValue(userJson, MembershipUser.class);
 
-            if (updatedUser.getMembershipPlan() != null && !MEMBERSHIP_PLANS.containsKey(updatedUser.getMembershipPlan())) {
+            if (updatedUser.getMembershipPlan() != null
+                    && !MEMBERSHIP_PLANS.containsKey(updatedUser.getMembershipPlan())) {
                 throw new IllegalArgumentException("Invalid membership plan selected.");
             }
 
@@ -170,7 +166,8 @@ public class MembershipUserController {
         response.put("id", user.getId());
         response.put("fullName", user.getFullName() != null ? user.getFullName() : "N/A");
         response.put("state", user.getState() != null ? user.getState() : "N/A");
-        response.put("membershipNumber", user.getMembershipNumber() != null ? user.getMembershipNumber() : user.getPhone());
+        response.put("membershipNumber",
+                user.getMembershipNumber() != null ? user.getMembershipNumber() : user.getPhone());
         response.put("phone", user.getPhone() != null ? user.getPhone() : "N/A");
         response.put("profilePhoto", user.getProfilePhoto());
         response.put("referralCode", user.getReferralCode() != null ? user.getReferralCode() : "N/A");
