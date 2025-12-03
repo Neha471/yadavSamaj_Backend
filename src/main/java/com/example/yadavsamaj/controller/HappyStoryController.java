@@ -24,7 +24,7 @@ public class HappyStoryController {
     private final HappyStoryService happyStoryService;
 
     // 📁 Folder where uploaded images are stored
-    private static final String UPLOAD_DIR = "E:/Akanksha/Yadav_samaj/yadavsajam/uploads/happy-stories/";
+    private static final String UPLOAD_DIR = "/var/www/angular/uploads/happy-stories/";
 
     // ✅ GET all stories
     @GetMapping
@@ -42,19 +42,19 @@ public class HappyStoryController {
     }
 
     // ✅ ADD new story (with optional image)
-    @PostMapping(value = "/add", consumes = {"multipart/form-data"})
+    @PostMapping(value = "/add", consumes = { "multipart/form-data" })
     public ResponseEntity<?> addStory(
             @RequestPart("coupleName") String coupleName,
             @RequestPart("message") String message,
-            @RequestPart(value = "photo", required = false) MultipartFile photo
-    ) {
+            @RequestPart(value = "photo", required = false) MultipartFile photo) {
         try {
             String photoUrl = null;
 
             // 🖼️ Save image if uploaded
             if (photo != null && !photo.isEmpty()) {
                 File uploadDir = new File(UPLOAD_DIR);
-                if (!uploadDir.exists()) uploadDir.mkdirs();
+                if (!uploadDir.exists())
+                    uploadDir.mkdirs();
 
                 String fileName = System.currentTimeMillis() + "_" + photo.getOriginalFilename();
                 File dest = new File(uploadDir, fileName);
@@ -84,8 +84,7 @@ public class HappyStoryController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateStory(
             @PathVariable Long id,
-            @RequestBody HappyStory updatedStory
-    ) {
+            @RequestBody HappyStory updatedStory) {
         Optional<HappyStory> existing = happyStoryService.getStoryById(id);
         if (existing.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
